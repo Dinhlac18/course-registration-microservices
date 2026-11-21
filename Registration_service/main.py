@@ -1,6 +1,7 @@
 import os
 import sqlite3
-import requests
+from typing import Optional
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -13,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_PATH = "registrations.db"
+DB_PATH = "/tmp/registrations.db" if os.getenv("VERCEL") else "registrations.db"
 STUDENT_SERVICE_URL = os.getenv("STUDENT_SERVICE_URL", "http://127.0.0.1:8001").rstrip("/")
 COURSE_SERVICE_URL = os.getenv("COURSE_SERVICE_URL", "http://127.0.0.1:8002").rstrip("/")
 
@@ -44,64 +45,67 @@ def init_db():
 init_db()
 
 
-class RegisterRequest(BaseModel):
+class RegistrationCreate(BaseModel):
     student_code: str
     section_id: int
 
 
-@app.get("/health")
-def health():
-    return {"service": "registration-service", "status": "ok"}
-
-
-@app.get("/registrations")
-def list_registrations(student_code: str | None = None):
+def _list_registrations(student_code: Optional[str] = None):
     with get_db() as conn:
         if student_code:
             rows = conn.execute(
-                "SELECT * FROM registrations WHERE student_code = ? ORDER BY id DESC",
+                "SELECT * FROM registrations WHERE student_code = ? ORDER BY id ASC",
                 (student_code.strip(),),
             ).fetchall()
         else:
-            rows = conn.execute("SELECT * FROM registrations ORDER BY id DESC").fetchall()
+            rows = conn.execute("SELECT * FROM registrations ORDER BY id ASC").fetchall()
         return [dict(r) for r in rows]
 
 
-@app.post("/registrations", status_code=201)
-def register_course(req: RegisterRequest):
-    student_code = req.student_code.strip()
-
-    st_res = requests.get(f"{STUDENT_SERVICE_URL}/students/{student_code}", timeout=5)
-    if st_res.status_code != 200:
-        raise HTTPException(status_code=404, detail="Mã sinh viên không tồn tại")
-
-    sec_res = requests.get(f"{COURSE_SERVICE_URL}/sections/{req.section_id}", timeout=5)
-    if sec_res.status_code != 200:
-        raise HTTPException(status_code=404, detail="Lớp học phần không tồn tại")
-    section = sec_res.json()
+def _create_registration(data: RegistrationCreate):
+    student_code = data.student_code.strip()
+    section_id = data.section_id
+    if not student_code:
+        raise HTTPException(status_code=400, detail="Thiếu mã sinh viên")
 
     with get_db() as conn:
-        existing = conn.execute(
-            "SELECT * FROM registrations WHERE student_code = ?", (student_code,)
-        ).fetchall()
-        for item in existing:
-            if item["section_id"] == req.section_id:
-                raise HTTPException(status_code=400, detail="Bạn đã đăng ký lớp học phần này rồi")
-            if item["schedule"] == section["schedule"]:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Trùng lịch học ({section['schedule']}) với môn {item['course_name']}",
-                )
-
-    reserve_res = requests.post(
-        f"{COURSE_SERVICE_URL}/sections/{req.section_id}/reserve", timeout=5
-    )
-    if reserve_res.status_code != 200:
-        detail = reserve_res.json().get("detail", "Không thể giữ chỗ lớp học phần")
-        raise HTTPException(status_code=reserve_res.status_code, detail=detail)
+        dup = conn.execute(
+            "SELECT id FROM registrations WHERE student_code = ? AND section_id = ?",
+            (student_code, section_id),
+        ).fetchone()
+        if dup:
+            raise HTTPException(status_code=400, detail="Sinh viên đã đăng ký lớp học phần này")
 
     try:
-        with get_db() as conn:
+        with httpx.Client(timeout=10.0) as client:
+            st_resp = client.get(f"{STUDENT_SERVICE_URL}/students/{student_code}")
+            if st_resp.status_code == 404:
+                raise HTTPException(status_code=404, detail="Không tìm thấy sinh viên")
+            st_resp.raise_for_status()
+
+            sec_resp = client.get(f"{COURSE_SERVICE_URL}/sections/{section_id}")
+            if sec_resp.status_code == 404:
+                raise HTTPException(status_code=404, detail="Không tìm thấy lớp học phần")
+            sec_resp.raise_for_status()
+            section = sec_resp.json()
+
+            if section["enrolled_slots"] >= section["max_slots"]:
+                raise HTTPException(status_code=400, detail="Lớp học phần đã hết chỗ")
+
+            slot_resp = client.patch(
+                f"{COURSE_SERVICE_URL}/sections/{section_id}/slot",
+                json={"delta": 1},
+            )
+            if slot_resp.status_code >= 400:
+                detail = slot_resp.json().get("detail", "Không thể cập nhật sĩ số")
+                raise HTTPException(status_code=slot_resp.status_code, detail=detail)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Lỗi kết nối service nội bộ: {exc}")
+
+    with get_db() as conn:
+        try:
             cur = conn.execute(
                 """
                 INSERT INTO registrations (student_code, section_id, course_code, course_name, schedule)
@@ -109,27 +113,59 @@ def register_course(req: RegisterRequest):
                 """,
                 (
                     student_code,
-                    req.section_id,
+                    section_id,
                     section["course_code"],
                     section["course_name"],
                     section["schedule"],
                 ),
             )
-            row = conn.execute("SELECT * FROM registrations WHERE id = ?", (cur.lastrowid,)).fetchone()
+            row = conn.execute(
+                "SELECT * FROM registrations WHERE id = ?", (cur.lastrowid,)
+            ).fetchone()
             return dict(row)
-    except Exception:
-        requests.post(f"{COURSE_SERVICE_URL}/sections/{req.section_id}/release", timeout=5)
-        raise HTTPException(status_code=500, detail="Lỗi lưu đăng ký, đã hoàn lại slot")
+        except sqlite3.IntegrityError:
+            raise HTTPException(status_code=400, detail="Sinh viên đã đăng ký lớp học phần này")
 
 
-@app.delete("/registrations/{reg_id}")
-def cancel_registration(reg_id: int):
+def _delete_registration(reg_id: int):
     with get_db() as conn:
         row = conn.execute("SELECT * FROM registrations WHERE id = ?", (reg_id,)).fetchone()
         if not row:
-            raise HTTPException(status_code=404, detail="Không tìm thấy bản ghi đăng ký")
+            raise HTTPException(status_code=404, detail="Không tìm thấy lượt đăng ký")
+
         section_id = row["section_id"]
         conn.execute("DELETE FROM registrations WHERE id = ?", (reg_id,))
 
-    requests.post(f"{COURSE_SERVICE_URL}/sections/{section_id}/release", timeout=5)
-    return {"message": "Đã hủy đăng ký học phần"}
+    try:
+        with httpx.Client(timeout=10.0) as client:
+            client.patch(f"{COURSE_SERVICE_URL}/sections/{section_id}/slot", json={"delta": -1})
+    except Exception:
+        pass
+
+    return {"deleted": True, "id": reg_id}
+
+
+@app.get("/health")
+@app.get("/api/registrations/health")
+def health():
+    return {"service": "registration-service", "status": "ok"}
+
+
+@app.get("/registrations")
+@app.get("/api/registrations")
+@app.get("/api/registrations/")
+def list_registrations(student_code: Optional[str] = None):
+    return _list_registrations(student_code)
+
+
+@app.post("/registrations", status_code=201)
+@app.post("/api/registrations", status_code=201)
+@app.post("/api/registrations/", status_code=201)
+def create_registration(data: RegistrationCreate):
+    return _create_registration(data)
+
+
+@app.delete("/registrations/{reg_id}")
+@app.delete("/api/registrations/{reg_id}")
+def delete_registration(reg_id: int):
+    return _delete_registration(reg_id)

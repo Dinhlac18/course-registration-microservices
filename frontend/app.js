@@ -1,7 +1,7 @@
 const DEFAULT_URLS = {
-  student: localStorage.getItem("STUDENT_SERVICE_URL") || "http://127.0.0.1:8001",
-  course: localStorage.getItem("COURSE_SERVICE_URL") || "http://127.0.0.1:8002",
-  reg: localStorage.getItem("REGISTRATION_SERVICE_URL") || "http://127.0.0.1:8003",
+  student: localStorage.getItem("STUDENT_SERVICE_URL") || `${window.location.origin}/api/students`,
+  course: localStorage.getItem("COURSE_SERVICE_URL") || `${window.location.origin}/api/courses`,
+  reg: localStorage.getItem("REGISTRATION_SERVICE_URL") || `${window.location.origin}/api/registrations`,
 };
 
 const STUDENT_STORAGE_KEY = "SELECTED_STUDENT_CODE";
@@ -156,8 +156,8 @@ async function loadAll() {
 
   try {
     const [allStudentsRes, secRes] = await Promise.all([
-      fetch(`${urls.student}/students`),
-      fetch(`${urls.course}/sections`),
+      fetch(`${urls.student}`),
+      fetch(`${urls.course}`),
     ]);
     const allStudents = await allStudentsRes.json();
     const sections = await secRes.json();
@@ -180,7 +180,7 @@ async function loadAll() {
       return;
     }
 
-    const stRes = await fetch(`${urls.student}/students/${encodeURIComponent(currentCode)}`);
+    const stRes = await fetch(`${urls.student}/${encodeURIComponent(currentCode)}`);
     if (!stRes.ok) {
       renderSections(sections, new Set(), currentCode);
       renderRegistrations([]);
@@ -192,7 +192,7 @@ async function loadAll() {
     document.getElementById("menuStudentLabel").textContent = `Đã chọn sinh viên: ${label} — Chọn trang muốn mở:`;
     document.getElementById("workspaceStudentInfo").textContent = `Sinh viên: ${label}`;
 
-    const regRes = await fetch(`${urls.reg}/registrations?student_code=${encodeURIComponent(currentCode)}`);
+    const regRes = await fetch(`${urls.reg}?student_code=${encodeURIComponent(currentCode)}`);
     const regs = await regRes.json();
     const registeredSectionIds = new Set(regs.map((r) => r.section_id));
 
@@ -250,7 +250,7 @@ async function addStudent() {
   }
 
   try {
-    const res = await fetch(`${urls.student}/students`, {
+    const res = await fetch(`${urls.student}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ student_code, full_name, major }),
@@ -284,7 +284,7 @@ async function updateStudent() {
   }
 
   try {
-    const res = await fetch(`${urls.student}/students/${encodeURIComponent(student_code)}`, {
+    const res = await fetch(`${urls.student}/${encodeURIComponent(student_code)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ full_name, major }),
@@ -325,7 +325,7 @@ async function addSection() {
   }
 
   try {
-    const res = await fetch(`${urls.course}/sections`, {
+    const res = await fetch(`${urls.course}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ course_code, course_name, credits, schedule, max_slots }),
@@ -350,7 +350,7 @@ async function addSection() {
 async function deleteSection(sectionId) {
   const urls = getUrls();
   try {
-    const res = await fetch(`${urls.course}/sections/${sectionId}`, { method: "DELETE" });
+    const res = await fetch(`${urls.course}/${sectionId}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) {
       setMessage(data.detail || "Không thể xóa học phần.", true);
@@ -420,7 +420,7 @@ async function registerSection(studentCode, sectionId) {
   const urls = getUrls();
   const activeCode = studentCode || getActiveStudentCode();
   try {
-    const res = await fetch(`${urls.reg}/registrations`, {
+    const res = await fetch(`${urls.reg}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ student_code: activeCode, section_id: sectionId }),
@@ -442,7 +442,7 @@ async function cancelRegistration(regId) {
   const urls = getUrls();
   const activeCode = getActiveStudentCode();
   try {
-    const res = await fetch(`${urls.reg}/registrations/${regId}`, { method: "DELETE" });
+    const res = await fetch(`${urls.reg}/${regId}`, { method: "DELETE" });
     if (!res.ok) {
       setMessage("Hủy đăng ký thất bại.", true);
       return;

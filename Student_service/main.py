@@ -1,3 +1,4 @@
+import os
 import sqlite3
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -11,7 +12,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DB_PATH = "students.db"
+DB_PATH = "/tmp/students.db" if os.getenv("VERCEL") else "students.db"
 
 
 def get_db():
@@ -55,20 +56,13 @@ class StudentUpdate(BaseModel):
     major: str
 
 
-@app.get("/health")
-def health():
-    return {"service": "student-service", "status": "ok"}
-
-
-@app.get("/students")
-def list_students():
+def _list_students():
     with get_db() as conn:
         rows = conn.execute("SELECT * FROM students ORDER BY id ASC").fetchall()
         return [dict(r) for r in rows]
 
 
-@app.get("/students/{student_code}")
-def get_student(student_code: str):
+def _get_student(student_code: str):
     with get_db() as conn:
         row = conn.execute(
             "SELECT * FROM students WHERE student_code = ?", (student_code,)
@@ -78,8 +72,7 @@ def get_student(student_code: str):
         return dict(row)
 
 
-@app.post("/students", status_code=201)
-def create_student(data: StudentCreate):
+def _create_student(data: StudentCreate):
     code = data.student_code.strip()
     name = data.full_name.strip()
     major = data.major.strip()
@@ -102,8 +95,7 @@ def create_student(data: StudentCreate):
             raise HTTPException(status_code=400, detail="Mã sinh viên đã tồn tại")
 
 
-@app.put("/students/{student_code}")
-def update_student(student_code: str, data: StudentUpdate):
+def _update_student(student_code: str, data: StudentUpdate):
     code = student_code.strip()
     name = data.full_name.strip()
     major = data.major.strip()
@@ -125,3 +117,35 @@ def update_student(student_code: str, data: StudentUpdate):
             "SELECT * FROM students WHERE student_code = ?", (code,)
         ).fetchone()
         return dict(updated)
+
+
+@app.get("/health")
+@app.get("/api/students/health")
+def health():
+    return {"service": "student-service", "status": "ok"}
+
+
+@app.get("/students")
+@app.get("/api/students")
+@app.get("/api/students/")
+def list_students():
+    return _list_students()
+
+
+@app.get("/students/{student_code}")
+@app.get("/api/students/{student_code}")
+def get_student(student_code: str):
+    return _get_student(student_code)
+
+
+@app.post("/students", status_code=201)
+@app.post("/api/students", status_code=201)
+@app.post("/api/students/", status_code=201)
+def create_student(data: StudentCreate):
+    return _create_student(data)
+
+
+@app.put("/students/{student_code}")
+@app.put("/api/students/{student_code}")
+def update_student(student_code: str, data: StudentUpdate):
+    return _update_student(student_code, data)

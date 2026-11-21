@@ -1,0 +1,30 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "frontend": {
+      "root": "Frontend"
+    },
+    "student_service": {
+      "root": "Student_service",
+      "framework": "fastapi"
+    },
+    "course_service": {
+      "root": "Course_service",
+      "framework": "fastapi"
+    },
+    "registration_service": {
+      "root": "Registration_service",
+      "framework": "fastapi",
+      "bindings": [
+        { "type": "service", "service": "student_service", "format": "url", "env": "STUDENT_SERVICE_URL" },
+        { "type": "service", "service": "course_service", "format": "url", "env": "COURSE_SERVICE_URL" }
+      ]
+    }
+  },
+  "rewrites": [
+    { "source": "/api/students/(.*)", "destination": { "service": "student_service" } },
+    { "source": "/api/courses/(.*)", "destination": { "service": "course_service" } },
+    { "source": "/api/registrations/(.*)", "destination": { "service": "registration_service" } },
+    { "source": "/(.*)", "destination": { "service": "frontend" } }
+  ]
+}
