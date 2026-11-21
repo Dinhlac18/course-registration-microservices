@@ -1,493 +1,540 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ thống Quản lý Đăng ký Học phần - Van Lang University</title>
-    <!-- Bootstrap 5, FontAwesome & Inter Font -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        :root {
-            --vlu-red: #8B0000;
-            --vlu-gold: #FFD700;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Đăng ký Học phần - Microservices</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --secondary: #475569;
+      --secondary-hover: #334155;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --radius: 12px;
+      --shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+    }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: url('vlu-bg.jpg') no-repeat center center fixed;
-            background-size: cover;
-            color: #2d3748;
-            min-height: 100vh;
-        }
+    * { box-sizing: border-box; }
 
-        .navbar-vlu {
-            background: rgba(139, 0, 0, 0.88);
-            backdrop-filter: blur(10px);
-            border-bottom: 2px solid var(--vlu-gold);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Roboto, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
 
-        .card {
-            border: 1px solid rgba(255, 255, 255, 0.4);
-            border-radius: 16px;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(12px);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
+    .topbar {
+      background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+      color: #fff;
+      padding: 24px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
 
-        .card-header {
-            background: rgba(255, 255, 255, 0.95);
-            border-bottom: 2px solid #fee2e2;
-            font-weight: 700;
-            border-top-left-radius: 16px !important;
-            border-top-right-radius: 16px !important;
-            padding: 1.2rem 1.5rem;
-        }
+    .topbar-inner {
+      max-width: 1120px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
 
-        .nav-pills .nav-link {
-            color: #ffffff;
-            background: rgba(0, 0, 0, 0.4);
-            font-weight: 600;
-            border-radius: 10px;
-            padding: 10px 24px;
-            transition: all 0.3s;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(5px);
-        }
+    .topbar h2 {
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
 
-        .nav-pills .nav-link.active {
-            background: linear-gradient(135deg, #8B0000 0%, #a80000 100%);
-            border: 1px solid var(--vlu-gold);
-            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
-            color: var(--vlu-gold);
-        }
+    .topbar p {
+      margin: 0;
+      color: #cbd5e1;
+      font-size: 13.5px;
+    }
 
-        .nav-pills .nav-link:hover:not(.active) {
-            background: rgba(255, 255, 255, 0.2);
-            color: #fff;
-        }
+    .arch-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
 
-        .btn-vlu-primary {
-            background: linear-gradient(135deg, #8B0000 0%, #a80000 100%);
-            border: 1px solid var(--vlu-gold);
-            color: white;
-            font-weight: 600;
-        }
+    .arch-pill {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      color: #f8fafc;
+      padding: 5px 11px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
 
-        .btn-vlu-primary:hover {
-            background: linear-gradient(135deg, #6a0000 0%, #8B0000 100%);
-            color: var(--vlu-gold);
-        }
+    .container {
+      max-width: 1120px;
+      margin: 24px auto 40px;
+      padding: 0 16px;
+    }
 
-        .btn-outline-vlu {
-            border-color: #8B0000;
-            color: #8B0000;
-            font-weight: 600;
-        }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px 22px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow);
+    }
 
-        .btn-outline-vlu:hover {
-            background-color: #8B0000;
-            color: white;
-        }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #f1f5f9;
+    }
 
-        .table th {
-            background-color: rgba(254, 226, 226, 0.8);
-            color: #742a2a;
-            font-weight: 700;
-            border-bottom: 2px solid #fca5a5;
-        }
+    .card-header h3 {
+      margin: 0;
+      font-size: 16.5px;
+      font-weight: 700;
+      color: var(--text);
+    }
 
-        .badge-success-custom {
-            background-color: #d1fae5;
-            color: #065f46;
-            font-weight: 600;
-            padding: 6px 14px;
-            border-radius: 20px;
-        }
+    .sub-title {
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: var(--muted);
+      margin: 16px 0 8px;
+    }
 
-        .form-control, .form-select {
-            border-radius: 8px;
-            padding: 0.65rem 1rem;
-            border: 1px solid #cbd5e1;
-            background-color: rgba(255, 255, 255, 0.9);
-        }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 12px;
+    }
 
-        .form-control:focus {
-            box-shadow: 0 0 0 3px rgba(139, 0, 0, 0.25);
-            border-color: #8B0000;
-        }
-    </style>
+    input, select {
+      padding: 8.5px 12px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    input:disabled {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    label.field-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    button {
+      padding: 8.5px 14px;
+      border-radius: 8px;
+      border: none;
+      background: var(--primary);
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.15s, transform 0.05s;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    button:active:not(:disabled) {
+      transform: translateY(1px);
+    }
+
+    button.secondary {
+      background: var(--secondary);
+    }
+
+    button.secondary:hover:not(:disabled) {
+      background: var(--secondary-hover);
+    }
+
+    button.danger {
+      background: var(--danger);
+    }
+
+    button.danger:hover:not(:disabled) {
+      background: var(--danger-hover);
+    }
+
+    button:disabled {
+      background: #cbd5e1;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    .student-selector-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid var(--primary);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 4px 0 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .student-selector-box label {
+      font-size: 14px;
+      font-weight: 700;
+      color: #1e293b;
+    }
+
+    .student-select {
+      flex: 1;
+      min-width: 260px;
+      font-weight: 600;
+    }
+
+    .menu-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin: 14px 0;
+    }
+
+    .menu-title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #1e3a8a;
+      margin-bottom: 12px;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+
+    .menu-btn {
+      padding: 14px 16px;
+      border-radius: 10px;
+      font-size: 14.5px;
+      text-align: left;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .add-panel {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 14px;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 11px 13px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: #f8fafc;
+      color: #334155;
+      font-weight: 700;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #f8fafc;
+    }
+
+    .actions {
+      display: flex;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    #msg:empty {
+      display: none;
+    }
+
+    #msg {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-weight: 600;
+      background: #eff6ff;
+      color: #1d4ed8;
+      border: 1px solid #bfdbfe;
+    }
+  </style>
 </head>
 <body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h2>Hệ thống Quản lý Học phần &amp; Đăng ký Học tập</h2>
+        <p>Kiến trúc Microservices độc lập • Student • Course • Registration</p>
+      </div>
+      <div class="arch-pills">
+        <span class="arch-pill">Student Service</span>
+        <span class="arch-pill">Course Service</span>
+        <span class="arch-pill">Registration Service</span>
+      </div>
+    </div>
+  </header>
 
-    <!-- Header / Navbar (Đã bỏ hoàn toàn logo, tiêu đề hiển thị gọn gàng) -->
-    <nav class="navbar navbar-vlu navbar-dark py-3 mb-4">
-        <div class="container justify-content-center position-relative">
-            <span class="navbar-brand mb-0 h1 fs-3 fw-bold text-white text-center">
-                <i class="fa-solid fa-graduation-cap me-2 text-warning"></i> HỆ THỐNG QUẢN LÝ ĐĂNG KÝ HỌC PHẦN
-            </span>
-            <span class="badge bg-warning text-dark fs-6 px-3 py-2 fw-bold rounded-pill shadow-sm position-absolute end-0">Microservices</span>
+  <main class="container">
+    <!-- MÀN HÌNH 1: CHỌN & QUẢN LÝ SINH VIÊN -->
+    <div id="studentScreen">
+      <section class="card">
+        <div class="card-header">
+          <h3>Cấu hình URL Microservices</h3>
         </div>
-    </nav>
-
-    <div class="container pb-5">
-        
-        <!-- Tabs chuyển hướng -->
-        <ul class="nav nav-pills justify-content-center mb-4 gap-3" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active shadow-sm" id="student-tab" data-bs-toggle="tab" data-bs-target="#student-content" type="button" role="tab">
-                    <i class="fa-solid fa-user-graduate me-2"></i> Quản lý Sinh viên
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link shadow-sm" id="course-tab" data-bs-toggle="tab" data-bs-target="#course-content" type="button" role="tab">
-                    <i class="fa-solid fa-book-open me-2"></i> Quản lý Học phần
-                </button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link shadow-sm" id="registration-tab" data-bs-toggle="tab" data-bs-target="#registration-content" type="button" role="tab">
-                    <i class="fa-solid fa-file-signature me-2"></i> Đăng ký học phần
-                </button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-            
-            <!-- TAB 1: QUẢN LÝ SINH VIÊN -->
-            <div class="tab-pane fade show active" id="student-content" role="tabpanel">
-                <div class="card mb-4">
-                    <div class="card-header text-danger fs-5">
-                        <i class="fa-solid fa-user-plus me-2"></i> Thêm Sinh Viên Mới
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="studentForm" class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold text-muted small">Mã Sinh Viên</label>
-                                <input type="text" class="form-control" id="stdId" placeholder="VD: SV012" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold text-muted small">Họ và Tên</label>
-                                <input type="text" class="form-control" id="stdName" placeholder="Nhập họ tên đầy đủ" required>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label fw-semibold text-muted small">Chuyên Ngành</label>
-                                <input type="text" class="form-control" id="stdMajor" placeholder="Nhập chuyên ngành" required>
-                            </div>
-                            <div class="col-md-1 d-flex align-items-end">
-                                <button type="submit" class="btn btn-vlu-primary w-100 py-2"><i class="fa-solid fa-plus"></i></button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span class="fs-5 text-secondary"><i class="fa-solid fa-users me-2"></i> Danh Sách Sinh Viên <span class="badge bg-secondary fs-6">Port 8001</span></span>
-                        <button class="btn btn-outline-vlu btn-sm px-3" onclick="loadStudents()"><i class="fa-solid fa-rotate me-1"></i> Tải lại</button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 text-center">
-                                <thead>
-                                    <tr>
-                                        <th class="py-3">Mã SV</th>
-                                        <th class="py-3 text-start ps-4">Họ và Tên</th>
-                                        <th class="py-3 text-start">Chuyên Ngành</th>
-                                        <th class="py-3">Thao Tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="studentTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: QUẢN LÝ HỌC PHẦN -->
-            <div class="tab-pane fade" id="course-content" role="tabpanel">
-                <div class="card mb-4">
-                    <div class="card-header text-danger fs-5">
-                        <i class="fa-solid fa-book-medical me-2"></i> Thêm Học Phần Mới
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="courseForm" class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold text-muted small">Mã Học Phần</label>
-                                <input type="text" class="form-control" id="crsId" placeholder="VD: HP13" required>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label fw-semibold text-muted small">Tên Học Phần</label>
-                                <input type="text" class="form-control" id="crsName" placeholder="Nhập tên học phần" required>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label fw-semibold text-muted small">Số Chỗ (Slots)</label>
-                                <input type="number" class="form-control" id="crsSlots" placeholder="Nhập số lượng" min="1" required>
-                            </div>
-                            <div class="col-md-1 d-flex align-items-end">
-                                <button type="submit" class="btn btn-vlu-primary w-100 py-2"><i class="fa-solid fa-plus"></i></button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span class="fs-5 text-secondary"><i class="fa-solid fa-book me-2"></i> Danh Sách Học Phần <span class="badge bg-secondary fs-6">Port 8002</span></span>
-                        <button class="btn btn-outline-vlu btn-sm px-3" onclick="loadCourses()"><i class="fa-solid fa-rotate me-1"></i> Tải lại</button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 text-center">
-                                <thead>
-                                    <tr>
-                                        <th class="py-3">Mã HP</th>
-                                        <th class="py-3 text-start ps-4">Tên Học Phần</th>
-                                        <th class="py-3">Số Chỗ (Slots)</th>
-                                        <th class="py-3">Thao Tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="courseTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 3: ĐĂNG KÝ HỌC PHẦN -->
-            <div class="tab-pane fade" id="registration-content" role="tabpanel">
-                <div class="card mb-4">
-                    <div class="card-header text-danger fs-5">
-                        <i class="fa-solid fa-pen-to-square me-2"></i> Đăng Ký Học Phần Cho Sinh Viên
-                    </div>
-                    <div class="card-body p-4">
-                        <form id="regForm" class="row g-3">
-                            <div class="col-md-5">
-                                <label class="form-label fw-semibold text-muted small">Mã Sinh Viên</label>
-                                <input type="text" class="form-control" id="regStdId" placeholder="VD: SV001" required>
-                            </div>
-                            <div class="col-md-5">
-                                <label class="form-label fw-semibold text-muted small">Mã Học Phần</label>
-                                <input type="text" class="form-control" id="regCrsId" placeholder="VD: HP12" required>
-                            </div>
-                            <div class="col-md-2 d-flex align-items-end">
-                                <button type="submit" class="btn btn-vlu-primary w-100 fw-bold py-2 shadow-sm"><i class="fa-solid fa-check me-1"></i> Đăng Ký</button>
-                            </div>
-                        </form>
-                        <div id="regAlert" class="mt-3"></div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <span class="fs-5 text-secondary"><i class="fa-solid fa-list-check me-2"></i> Lịch Sử Đăng Ký Thành Công</span>
-                        <button class="btn btn-outline-vlu btn-sm px-3" onclick="loadRegistrations()"><i class="fa-solid fa-rotate me-1"></i> Tải lại</button>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover align-middle mb-0 text-center">
-                                <thead>
-                                    <tr>
-                                        <th class="py-3">ID</th>
-                                        <th class="py-3">Mã Sinh Viên</th>
-                                        <th class="py-3">Mã Học Phần</th>
-                                        <th class="py-3">Trạng Thái</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="regTableBody"></tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <div class="row">
+          <input id="studentUrl" placeholder="Student Service URL" size="26" />
+          <input id="courseUrl" placeholder="Course Service URL" size="26" />
+          <input id="regUrl" placeholder="Registration Service URL" size="26" />
+          <button onclick="saveUrls()">Lưu &amp; Tải lại</button>
         </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <h3>Quản lý &amp; Chọn sinh viên</h3>
+        </div>
+
+        <div class="student-selector-box">
+          <label for="studentDropdown">Sinh viên đang chọn:</label>
+          <select id="studentDropdown" class="student-select" onchange="onStudentDropdownChange()">
+            <option value="">-- Chọn sinh viên --</option>
+          </select>
+        </div>
+
+        <!-- Bảng lựa chọn tự động hiện sau khi chọn sinh viên -->
+        <div id="studentActionMenu" class="menu-box" style="display: none;">
+          <div id="menuStudentLabel" class="menu-title">Chọn trang muốn mở:</div>
+          <div class="menu-grid">
+            <button class="menu-btn" onclick="openPage('sections')">
+              <span>Danh sách lớp học phần</span>
+              <span>→</span>
+            </button>
+            <button class="menu-btn secondary" onclick="openPage('registrations')">
+              <span>Học phần đã đăng ký</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="sub-title">Thêm sinh viên mới</div>
+        <div class="row">
+          <input id="newStudentCode" placeholder="Mã SV (VD: SV003)" size="15" />
+          <input id="newStudentName" placeholder="Họ và tên" size="24" />
+          <input id="newStudentMajor" placeholder="Ngành học" size="24" />
+          <button onclick="addStudent()">Thêm sinh viên</button>
+        </div>
+
+        <div id="editStudentPanel" class="add-panel" style="display: none;">
+          <div class="sub-title" style="margin-top: 0;">Cập nhật thông tin sinh viên</div>
+          <div class="row" style="margin-bottom: 0;">
+            <input id="editStudentCode" placeholder="Mã SV" size="14" disabled />
+            <input id="editStudentName" placeholder="Họ và tên" size="24" />
+            <input id="editStudentMajor" placeholder="Ngành học" size="24" />
+            <button onclick="updateStudent()">Lưu cập nhật</button>
+            <button type="button" class="secondary" onclick="closeEditStudentForm()">Hủy</button>
+          </div>
+        </div>
+
+        <div class="sub-title">Danh sách sinh viên</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã SV</th>
+                <th>Họ tên</th>
+                <th>Ngành</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="studentsBody"></tbody>
+          </table>
+        </div>
+
+        <div id="msg"></div>
+      </section>
     </div>
 
-    <!-- Script xử lý dữ liệu và gọi API -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const STUDENT_API = "http://localhost:8001";
-        const COURSE_API = "http://localhost:8002";
-        const REG_API = "http://localhost:8003";
+    <!-- MÀN HÌNH 2: TRANG CHI TIẾT (DANH SÁCH LỚP HỌC PHẦN / HỌC PHẦN ĐÃ ĐĂNG KÝ) -->
+    <div id="workspaceScreen" style="display: none;">
+      <section class="card">
+        <div class="card-header">
+          <div id="workspaceStudentInfo" style="font-weight: 700; font-size: 15px;"></div>
+          <div class="actions">
+            <button id="navSectionsBtn" class="secondary" onclick="openPage('sections')">Danh sách lớp học phần</button>
+            <button id="navRegsBtn" class="secondary" onclick="openPage('registrations')">Học phần đã đăng ký</button>
+            <button class="secondary" onclick="backToStudentScreen()">← Đổi sinh viên</button>
+          </div>
+        </div>
+        <div id="msgWorkspace"></div>
+      </section>
 
-        async function loadStudents() {
-            try {
-                let res = await fetch(`${STUDENT_API}/students`);
-                let data = await res.json();
-                let tbody = document.getElementById("studentTableBody");
-                tbody.innerHTML = "";
-                if(data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-muted">Chưa có dữ liệu sinh viên</td></tr>`;
-                    return;
-                }
-                data.forEach(s => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="fw-bold text-danger">${s.id}</td>
-                            <td class="text-start ps-4 fw-semibold">${s.name}</td>
-                            <td class="text-start text-muted">${s.major}</td>
-                            <td>
-                                <button class="btn btn-outline-danger btn-sm px-3 rounded-pill shadow-sm" onclick="deleteStudent('${s.id}')">
-                                    <i class="fa-solid fa-trash-can me-1"></i> Xóa
-                                </button>
-                            </td>
-                        </tr>`;
-                });
-            } catch (err) { console.error("Lỗi tải sinh viên:", err); }
-        }
+      <section id="sectionsPage" class="card" style="display: none;">
+        <div class="card-header">
+          <h3>Danh sách lớp học phần</h3>
+          <button id="toggleAddSectionBtn" onclick="toggleAddSectionForm()">+ Thêm học phần</button>
+        </div>
 
-        document.getElementById("studentForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            let payload = {
-                id: document.getElementById("stdId").value,
-                name: document.getElementById("stdName").value,
-                major: document.getElementById("stdMajor").value
-            };
-            let res = await fetch(`${STUDENT_API}/students`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            let result = await res.json();
-            if (res.ok) {
-                loadStudents();
-                this.reset();
-            } else {
-                alert(result.detail || "Có lỗi xảy ra");
-            }
-        });
+        <div id="addSectionPanel" class="add-panel" style="display: none;">
+          <div class="sub-title" style="margin-top: 0;">Thông tin học phần / lớp học phần mới</div>
+          <div class="row" style="margin-bottom: 0;">
+            <input id="newCourseCode" placeholder="Mã HP (VD: SE306)" size="14" />
+            <input id="newCourseName" placeholder="Tên học phần" size="24" />
 
-        async function deleteStudent(studentId) {
-            if (!confirm(`Bạn có chắc muốn xóa sinh viên ${studentId} không?`)) return;
-            try {
-                let res = await fetch(`${STUDENT_API}/students/${studentId}`, { method: "DELETE" });
-                let result = await res.json();
-                if (res.ok) {
-                    loadStudents();
-                } else {
-                    alert(result.detail || "Không thể xóa");
-                }
-            } catch (err) { alert("Lỗi kết nối tới Student Service!"); }
-        }
+            <label class="field-label">
+              TC:
+              <select id="newCredits">
+                <option value="1">1 TC</option>
+                <option value="2">2 TC</option>
+                <option value="3" selected>3 TC</option>
+                <option value="4">4 TC</option>
+              </select>
+            </label>
 
-        async function loadCourses() {
-            try {
-                let res = await fetch(`${COURSE_API}/courses`);
-                let data = await res.json();
-                let tbody = document.getElementById("courseTableBody");
-                tbody.innerHTML = "";
-                if(data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-muted">Chưa có dữ liệu học phần</td></tr>`;
-                    return;
-                }
-                data.forEach(c => {
-                    let slotBadge = c.slots > 5 ? `bg-success` : (c.slots > 0 ? `bg-warning text-dark` : `bg-danger`);
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="fw-bold text-danger">${c.id}</td>
-                            <td class="text-start ps-4 fw-semibold">${c.name}</td>
-                            <td><span class="badge ${slotBadge} px-3 py-2 fs-6 shadow-sm">${c.slots} slots</span></td>
-                            <td>
-                                <button class="btn btn-outline-danger btn-sm px-3 rounded-pill shadow-sm" onclick="deleteCourse('${c.id}')">
-                                    <i class="fa-solid fa-trash-can me-1"></i> Xóa
-                                </button>
-                            </td>
-                        </tr>`;
-                });
-            } catch (err) { console.error("Lỗi tải học phần:", err); }
-        }
+            <select id="newSchedule" style="min-width: 225px;">
+              <option value="Thứ 2 ( Tiết 1 - 3 )">Thứ 2 ( Tiết 1 - 3 )</option>
+              <option value="Thứ 2 ( Tiết 4 - 6 )">Thứ 2 ( Tiết 4 - 6 )</option>
+              <option value="Thứ 2 ( Tiết 7 - 9 )">Thứ 2 ( Tiết 7 - 9 )</option>
+              <option value="Thứ 2 ( Tiết 10 - 12 )">Thứ 2 ( Tiết 10 - 12 )</option>
 
-        document.getElementById("courseForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            let payload = {
-                id: document.getElementById("crsId").value,
-                name: document.getElementById("crsName").value,
-                slots: parseInt(document.getElementById("crsSlots").value)
-            };
-            let res = await fetch(`${COURSE_API}/courses`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-            let result = await res.json();
-            if (res.ok) {
-                loadCourses();
-                this.reset();
-            } else {
-                alert(result.detail || "Có lỗi xảy ra");
-            }
-        });
+              <option value="Thứ 3 ( Tiết 1 - 3 )">Thứ 3 ( Tiết 1 - 3 )</option>
+              <option value="Thứ 3 ( Tiết 4 - 6 )">Thứ 3 ( Tiết 4 - 6 )</option>
+              <option value="Thứ 3 ( Tiết 7 - 9 )">Thứ 3 ( Tiết 7 - 9 )</option>
+              <option value="Thứ 3 ( Tiết 10 - 12 )">Thứ 3 ( Tiết 10 - 12 )</option>
 
-        async function deleteCourse(courseId) {
-            if (!confirm(`Bạn có chắc muốn xóa học phần ${courseId} không?`)) return;
-            try {
-                let res = await fetch(`${COURSE_API}/courses/${courseId}`, { method: "DELETE" });
-                let result = await res.json();
-                if (res.ok) {
-                    loadCourses();
-                } else {
-                    alert(result.detail || "Không thể xóa");
-                }
-            } catch (err) { alert("Lỗi kết nối tới Course Service!"); }
-        }
+              <option value="Thứ 4 ( Tiết 1 - 3 )">Thứ 4 ( Tiết 1 - 3 )</option>
+              <option value="Thứ 4 ( Tiết 4 - 6 )">Thứ 4 ( Tiết 4 - 6 )</option>
+              <option value="Thứ 4 ( Tiết 7 - 9 )">Thứ 4 ( Tiết 7 - 9 )</option>
+              <option value="Thứ 4 ( Tiết 10 - 12 )">Thứ 4 ( Tiết 10 - 12 )</option>
 
-        async function loadRegistrations() {
-            try {
-                let res = await fetch(`${REG_API}/registrations`);
-                let data = await res.json();
-                let tbody = document.getElementById("regTableBody");
-                tbody.innerHTML = "";
-                if(data.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-muted">Chưa có lượt đăng ký nào</td></tr>`;
-                    return;
-                }
-                data.forEach(r => {
-                    tbody.innerHTML += `
-                        <tr>
-                            <td class="fw-bold text-secondary">#${r.id}</td>
-                            <td class="fw-semibold text-danger">${r.student_id}</td>
-                            <td class="fw-semibold text-success">${r.course_id}</td>
-                            <td><span class="badge-success-custom"><i class="fa-solid fa-circle-check me-1"></i> ${r.status}</span></td>
-                        </tr>`;
-                });
-            } catch (err) { console.error("Lỗi tải đăng ký:", err); }
-        }
+              <option value="Thứ 5 ( Tiết 1 - 3 )">Thứ 5 ( Tiết 1 - 3 )</option>
+              <option value="Thứ 5 ( Tiết 4 - 6 )">Thứ 5 ( Tiết 4 - 6 )</option>
+              <option value="Thứ 5 ( Tiết 7 - 9 )">Thứ 5 ( Tiết 7 - 9 )</option>
+              <option value="Thứ 5 ( Tiết 10 - 12 )">Thứ 5 ( Tiết 10 - 12 )</option>
 
-        document.getElementById("regForm").addEventListener("submit", async function(e) {
-            e.preventDefault();
-            let alertBox = document.getElementById("regAlert");
-            let payload = {
-                student_id: document.getElementById("regStdId").value,
-                course_id: document.getElementById("regCrsId").value
-            };
-            
-            try {
-                let res = await fetch(`${REG_API}/registrations`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(payload)
-                });
-                let result = await res.json();
-                if (res.ok) {
-                    alertBox.innerHTML = `<div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert"><i class="fa-solid fa-circle-check me-2"></i> ${result.message} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
-                    loadRegistrations();
-                    loadCourses(); 
-                } else {
-                    alertBox.innerHTML = `<div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert"><i class="fa-solid fa-triangle-exclamation me-2"></i> Lỗi: ${result.detail} <button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>`;
-                }
-            } catch (err) {
-                alertBox.innerHTML = `<div class="alert alert-danger shadow-sm" role="alert"><i class="fa-solid fa-plug-circle-xmark me-2"></i> Không thể kết nối đến Registration Service!</div>`;
-            }
-        });
+              <option value="Thứ 6 ( Tiết 1 - 3 )">Thứ 6 ( Tiết 1 - 3 )</option>
+              <option value="Thứ 6 ( Tiết 4 - 6 )">Thứ 6 ( Tiết 4 - 6 )</option>
+              <option value="Thứ 6 ( Tiết 7 - 9 )">Thứ 6 ( Tiết 7 - 9 )</option>
+              <option value="Thứ 6 ( Tiết 10 - 12 )">Thứ 6 ( Tiết 10 - 12 )</option>
 
-        window.onload = function() {
-            loadStudents();
-            loadCourses();
-            loadRegistrations();
-        };
-    </script>
+              <option value="Thứ 7 ( Tiết 1 - 3 )">Thứ 7 ( Tiết 1 - 3 )</option>
+              <option value="Thứ 7 ( Tiết 4 - 6 )">Thứ 7 ( Tiết 4 - 6 )</option>
+              <option value="Thứ 7 ( Tiết 7 - 9 )">Thứ 7 ( Tiết 7 - 9 )</option>
+              <option value="Thứ 7 ( Tiết 10 - 12 )">Thứ 7 ( Tiết 10 - 12 )</option>
+
+              <option value="Chủ nhật ( Tiết 1 - 3 )">Chủ nhật ( Tiết 1 - 3 )</option>
+              <option value="Chủ nhật ( Tiết 4 - 6 )">Chủ nhật ( Tiết 4 - 6 )</option>
+              <option value="Chủ nhật ( Tiết 7 - 9 )">Chủ nhật ( Tiết 7 - 9 )</option>
+              <option value="Chủ nhật ( Tiết 10 - 12 )">Chủ nhật ( Tiết 10 - 12 )</option>
+            </select>
+
+            <label class="field-label">
+              Sĩ số:
+              <input id="newMaxSlots" type="number" min="1" max="150" value="30" style="width: 82px;" />
+            </label>
+
+            <button onclick="addSection()">Lưu học phần</button>
+            <button type="button" class="secondary" onclick="toggleAddSectionForm(false)">Đóng</button>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã HP</th>
+                <th>Tên học phần</th>
+                <th>TC</th>
+                <th>Lịch học</th>
+                <th>Sĩ số</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="sectionsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="registrationsPage" class="card" style="display: none;">
+        <div class="card-header">
+          <h3>Học phần đã đăng ký</h3>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Mã HP</th>
+                <th>Tên học phần</th>
+                <th>Lịch học</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="regsBody"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="./app.js"></script>
 </body>
 </html>
