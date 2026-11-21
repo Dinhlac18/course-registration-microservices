@@ -1,7 +1,50 @@
+function getDefaultUrls() {
+  const host = window.location.hostname;
+  const port = window.location.port;
+  const isLocalStatic =
+    (host === "127.0.0.1" || host === "localhost") && port !== "3000";
+
+  if (isLocalStatic) {
+    return {
+      student: "http://127.0.0.1:8001",
+      course: "http://127.0.0.1:8002",
+      reg: "http://127.0.0.1:8003",
+    };
+  }
+
+  return {
+    student: `${window.location.origin}/api/students`,
+    course: `${window.location.origin}/api/courses`,
+    reg: `${window.location.origin}/api/registrations`,
+  };
+}
+
+const defaults = getDefaultUrls();
+
+// Nếu trước đó lỡ lưu URL /api/... khi đang chạy Live Server local thì tự làm sạch để không lỗi
+const savedStudentUrl = localStorage.getItem("STUDENT_SERVICE_URL");
+const savedCourseUrl = localStorage.getItem("COURSE_SERVICE_URL");
+const savedRegUrl = localStorage.getItem("REGISTRATION_SERVICE_URL");
+
+const isLocalHost =
+  window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+
+if (
+  isLocalHost &&
+  window.location.port !== "3000" &&
+  ((savedStudentUrl && savedStudentUrl.includes("/api/")) ||
+    (savedCourseUrl && savedCourseUrl.includes("/api/")) ||
+    (savedRegUrl && savedRegUrl.includes("/api/")))
+) {
+  localStorage.removeItem("STUDENT_SERVICE_URL");
+  localStorage.removeItem("COURSE_SERVICE_URL");
+  localStorage.removeItem("REGISTRATION_SERVICE_URL");
+}
+
 const DEFAULT_URLS = {
-  student: localStorage.getItem("STUDENT_SERVICE_URL") || `${window.location.origin}/api/students`,
-  course: localStorage.getItem("COURSE_SERVICE_URL") || `${window.location.origin}/api/courses`,
-  reg: localStorage.getItem("REGISTRATION_SERVICE_URL") || `${window.location.origin}/api/registrations`,
+  student: localStorage.getItem("STUDENT_SERVICE_URL") || defaults.student,
+  course: localStorage.getItem("COURSE_SERVICE_URL") || defaults.course,
+  reg: localStorage.getItem("REGISTRATION_SERVICE_URL") || defaults.reg,
 };
 
 const STUDENT_STORAGE_KEY = "SELECTED_STUDENT_CODE";
@@ -156,8 +199,8 @@ async function loadAll() {
 
   try {
     const [allStudentsRes, secRes] = await Promise.all([
-      fetch(`${urls.student}`),
-      fetch(`${urls.course}`),
+      fetch(`${urls.student}/students`),
+      fetch(`${urls.course}/sections`),
     ]);
     const allStudents = await allStudentsRes.json();
     const sections = await secRes.json();
@@ -180,7 +223,7 @@ async function loadAll() {
       return;
     }
 
-    const stRes = await fetch(`${urls.student}/${encodeURIComponent(currentCode)}`);
+    const stRes = await fetch(`${urls.student}/students/${encodeURIComponent(currentCode)}`);
     if (!stRes.ok) {
       renderSections(sections, new Set(), currentCode);
       renderRegistrations([]);
@@ -192,7 +235,7 @@ async function loadAll() {
     document.getElementById("menuStudentLabel").textContent = `Đã chọn sinh viên: ${label} — Chọn trang muốn mở:`;
     document.getElementById("workspaceStudentInfo").textContent = `Sinh viên: ${label}`;
 
-    const regRes = await fetch(`${urls.reg}?student_code=${encodeURIComponent(currentCode)}`);
+    const regRes = await fetch(`${urls.reg}/registrations?student_code=${encodeURIComponent(currentCode)}`);
     const regs = await regRes.json();
     const registeredSectionIds = new Set(regs.map((r) => r.section_id));
 
@@ -250,7 +293,7 @@ async function addStudent() {
   }
 
   try {
-    const res = await fetch(`${urls.student}`, {
+    const res = await fetch(`${urls.student}/students`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ student_code, full_name, major }),
@@ -284,7 +327,7 @@ async function updateStudent() {
   }
 
   try {
-    const res = await fetch(`${urls.student}/${encodeURIComponent(student_code)}`, {
+    const res = await fetch(`${urls.student}/students/${encodeURIComponent(student_code)}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ full_name, major }),
@@ -325,7 +368,7 @@ async function addSection() {
   }
 
   try {
-    const res = await fetch(`${urls.course}`, {
+    const res = await fetch(`${urls.course}/sections`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ course_code, course_name, credits, schedule, max_slots }),
@@ -350,7 +393,7 @@ async function addSection() {
 async function deleteSection(sectionId) {
   const urls = getUrls();
   try {
-    const res = await fetch(`${urls.course}/${sectionId}`, { method: "DELETE" });
+    const res = await fetch(`${urls.course}/sections/${sectionId}`, { method: "DELETE" });
     const data = await res.json();
     if (!res.ok) {
       setMessage(data.detail || "Không thể xóa học phần.", true);
@@ -420,7 +463,7 @@ async function registerSection(studentCode, sectionId) {
   const urls = getUrls();
   const activeCode = studentCode || getActiveStudentCode();
   try {
-    const res = await fetch(`${urls.reg}`, {
+    const res = await fetch(`${urls.reg}/registrations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ student_code: activeCode, section_id: sectionId }),
@@ -442,7 +485,7 @@ async function cancelRegistration(regId) {
   const urls = getUrls();
   const activeCode = getActiveStudentCode();
   try {
-    const res = await fetch(`${urls.reg}/${regId}`, { method: "DELETE" });
+    const res = await fetch(`${urls.reg}/registrations/${regId}`, { method: "DELETE" });
     if (!res.ok) {
       setMessage("Hủy đăng ký thất bại.", true);
       return;
